@@ -3,28 +3,48 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id        String   @id @default(cuid())
+  id        String          @id @default(cuid())
   name      String?
-  email     String   @unique
+  login     String?
   password  String?
-  tasks     Task[]
-  createdAt DateTime @default(now())
+  lists     List[]          // relação 1:N com listas
+  categories ListCategory[] // relação 1:N com categorias
+}
+
+model ListCategory {
+  id        String  @id @default(cuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id])
+  name      String?
+  priority  Int     @default(0)
+  lists     List[]  // relação 1:N com listas
+}
+
+model List {
+  id          String       @id @default(cuid())
+  userId      String
+  categoryId  String
+  name        String?
+  initialDate DateTime?
+  finalDate   DateTime?
+  priority    Int          @default(0)
+
+  user        User         @relation(fields: [userId], references: [id])
+  category    ListCategory @relation(fields: [categoryId], references: [id])
+  tasks       Task[]       // relação 1:N com tarefas
 }
 
 model Task {
   id          String   @id @default(cuid())
-  title       String
+  listId      String
+  name        String
   description String?
-  done        Boolean  @default(false)
-  priority    String?
-  dueDate     DateTime?
-  category    String?
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  createdAt   DateTime @default(now())
+  priority    Int      @default(0)
+
+  list        List     @relation(fields: [listId], references: [id])
 }
