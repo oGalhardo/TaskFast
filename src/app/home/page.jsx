@@ -1,20 +1,40 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ListaCard from "@/components/ListaCard";
 import ModalNovaLista from "@/components/ModalNovaLista";
 
 export default function HomePage() {
-  const [listas, setListas] = useState([
-    {
-      id: "1",
-      name: "Lista de Compras",
-      categoria: "Casa",
-      tarefas: [
-        { id: "1", name: "Comprar leite", description: "Leite integral 1L" },
-      ],
-    },
-  ]);
+  const [listas, setListas] = useState([]);
+
+  useEffect(() => {
+    async function fetchListas() {
+      const res = await fetch("/api/list");
+      const data = await res.json();
+
+      for (const lista of data) {
+        try {
+          const res = await fetch(`/api/task?listId=${lista.id}`);
+          const data = await res.json();
+          lista.tarefas = data || [];
+        } catch (err) {
+          console.error("Erro ao buscar tarefas:", err);
+        }
+
+        // try {
+        //   const res = await fetch(`/api/list-category?listId=${lista.id}`);
+        //   const data = await res.json();
+        //   lista.tarefas = data || [];
+        // } catch (err) {
+        //   console.error("Erro ao buscar tarefas:", err);
+        // }
+      }
+
+      setListas(data);
+    }
+
+    fetchListas();
+  }, []);
 
   const [modalAbertoNovaLista, setModalAbertoNovaLista] = useState(false);
 
@@ -26,26 +46,17 @@ export default function HomePage() {
     setModalAbertoNovaLista(false);
   }
 
-  function salvarLista(novaLista) {
-    setListas([
-      ...listas,
-      { ...novaLista, id: Date.now().toString(), tarefas: [] },
-    ]);
-    fecharModalNovaLista();
-  }
-
-  // Função para adicionar tarefa na lista correta
   function adicionarTarefa(listaId, tarefa) {
     setListas((oldListas) =>
       oldListas.map((lista) =>
         lista.id === listaId
           ? {
-              ...lista,
-              tarefas: [
-                ...lista.tarefas,
-                { ...tarefa, id: Date.now().toString() },
-              ],
-            }
+            ...lista,
+            tarefas: [
+              ...lista.tarefas,
+              { ...tarefa, id: Date.now().toString() },
+            ],
+          }
           : lista
       )
     );
@@ -76,7 +87,6 @@ export default function HomePage() {
       <ModalNovaLista
         aberto={modalAbertoNovaLista}
         fecharModal={fecharModalNovaLista}
-        salvarLista={salvarLista}
       />
     </main>
   );
