@@ -1,3 +1,4 @@
+import { compare } from "bcryptjs";
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
@@ -12,21 +13,27 @@ export const authOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     }),
     CredentialsProvider({
-      name: "credentials",
+      name: "Credenciais",
       credentials: {
         login: { label: "Login", type: "text" },
         password: { label: "Senha", type: "password" },
       },
       async authorize(credentials) {
-        const user = await prisma.user.findFirst({
-          where: {
-            login: credentials.login,
-            password: credentials.password,
-          },
+        const user = await prisma.user.findUnique({
+          where: { login: credentials.login },
         });
-        if (user) return user;
-        return null;
-      },
+
+        if (!user || !user.password) {
+          throw new Error("Usuário não encontrado");
+        }
+
+        const valid = await compare(credentials.password, user.password);
+        if (!valid) {
+          throw new Error("Senha incorreta");
+        }
+
+        return { id: user.id, name: user.login };
+      }
     }),
   ],
   callbacks: {

@@ -1,16 +1,30 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function LoginPage() {
+  const searchParams = useSearchParams();
+  const errorMessage = searchParams.get("error");
+
   const [userName, setUserName] = useState("");
   const [password, setPassword] = useState("");
+  const [erro, setErro] = useState("");
+
+  useEffect(() => {
+    if (errorMessage === "Usuário não encontrado" || errorMessage === "Senha incorreta") {
+      setErro(errorMessage);
+    } else if (errorMessage) {
+      setErro("Erro ao tentar login. Verifique os dados.");
+    }
+  }, [errorMessage]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setErro("");
     await signIn("credentials", {
-      userName,
+      login: userName,
       password,
       callbackUrl: "/home",
     });
@@ -32,9 +46,14 @@ export default function LoginPage() {
           className="mx-5 border dark:border-b-white/50 dark:border-t-white/50 border-b-white/20 sm:border-t-white/20 shadow-[20px_0_20px_20px] shadow-slate-500/10 dark:shadow-white/20 rounded-lg border-white/20 border-l-white/20 border-r-white/20 sm:shadow-sm lg:rounded-xl lg:shadow-none">
           <div className="flex flex-col p-6">
             <h3 className="text-xl font-semibold leading-6 tracking-tighter">Login</h3>
+            {erro && (
+              <p className="text-red-500 text-sm mt-2">
+                {erro}
+              </p>
+            )}
           </div>
           <div className="p-6 pt-0">
-            <form>
+            <form onSubmit={handleLogin}>
               <div>
                 <div>
                   <div
@@ -96,8 +115,8 @@ export default function LoginPage() {
                   Cadastrar-se
                 </a>
                 <button
-                  className="font-semibold hover:bg-black hover:text-white hover:ring hover:ring-white transition duration-300 inline-flex items-center justify-center rounded-md text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-white text-black h-10 px-4 py-2"
-                  type="submit">
+                  type="submit"
+                  className="font-semibold hover:bg-black hover:text-white hover:ring hover:ring-white transition duration-300 inline-flex items-center justify-center rounded-md text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-white text-black h-10 px-4 py-2">
                   Entrar
                 </button>
               </div>

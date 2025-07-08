@@ -22,7 +22,6 @@ export default function ModalNovaLista({ aberto, fecharModal, listaParaEditar = 
   }, [aberto]);
 
   useEffect(() => {
-    console.log(aberto, listaParaEditar)
     if (aberto && listaParaEditar) {
       setNome(listaParaEditar.name || "");
       setCategoria(listaParaEditar.categoryId || "");
@@ -38,7 +37,6 @@ export default function ModalNovaLista({ aberto, fecharModal, listaParaEditar = 
       setDataFinal("");
       setTarefas([]);
     }
-    console.log(tarefas)
   }, [listaParaEditar, aberto]);
 
 

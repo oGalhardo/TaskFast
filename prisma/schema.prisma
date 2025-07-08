@@ -10,7 +10,7 @@ datasource db {
 model User {
   id        String          @id @default(cuid())
   name      String?
-  login     String?
+  login     String?         @unique
   password  String?
   lists     List[]          // relação 1:N com listas
   categories ListCategory[] // relação 1:N com categorias

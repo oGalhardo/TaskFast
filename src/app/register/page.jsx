@@ -22,17 +22,19 @@ export default function RegisterPage() {
         },
       });
 
-      if (res.ok) {
+      if (res.status === 409) {
+        router.push("/login");
+      } else if (res.ok) {
         await signIn("credentials", {
           login: userName,
           password,
-          callbackUrl: "/",
+          callbackUrl: "/home",
         });
       } else {
-        alert("Erro ao cadastrar");
+        console.log(res);
       }
     } catch (err) {
-      alert("Erro ao cadastrar");
+      console.log(err);
     }
   };
 
