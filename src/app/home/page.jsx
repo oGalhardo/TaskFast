@@ -5,46 +5,61 @@ import ListaCard from "@/components/ListaCard";
 import ModalNovaLista from "@/components/ModalNovaLista";
 
 export default function HomePage() {
+  const [modalAbertoNovaLista, setModalAbertoNovaLista] = useState(false);
+  const [listaEditando, setListaEditando] = useState(null);
   const [listas, setListas] = useState([]);
 
-  useEffect(() => {
-    async function fetchListas() {
-      const res = await fetch("/api/list");
-      const data = await res.json();
+  async function fetchListas() {
+    const res = await fetch("/api/list");
+    const listasBase = await res.json();
 
-      for (const lista of data) {
+    const listasCompletas = await Promise.all(
+      listasBase.map(async (lista) => {
         try {
-          const res = await fetch(`/api/task?listId=${lista.id}`);
-          const data = await res.json();
-          lista.tarefas = data || [];
+          const [tarefasRes, categoriaRes] = await Promise.all([
+            fetch(`/api/task?listId=${lista.id}`),
+            fetch(`/api/list-category?id=${lista.categoryId}`),
+          ]);
+
+          const [tarefasData, categoriaData] = await Promise.all([
+            tarefasRes.json(),
+            categoriaRes.json(),
+          ]);
+
+          return {
+            ...lista,
+            tasks: tarefasData || [],
+            categoria: categoriaData.name || "Sem categoria",
+          };
         } catch (err) {
-          console.error("Erro ao buscar tarefas:", err);
+          console.error("Erro ao buscar dados da lista:", err);
+          return {
+            ...lista,
+            tasks: [],
+            categoria: "Erro ao carregar",
+          };
         }
+      })
+    );
 
-        // try {
-        //   const res = await fetch(`/api/list-category?listId=${lista.id}`);
-        //   const data = await res.json();
-        //   lista.tarefas = data || [];
-        // } catch (err) {
-        //   console.error("Erro ao buscar tarefas:", err);
-        // }
-      }
-
-      setListas(data);
-    }
-
-    fetchListas();
-  }, []);
-
-  const [modalAbertoNovaLista, setModalAbertoNovaLista] = useState(false);
+    setListas(listasCompletas);
+  }
 
   function abrirModalNovaLista() {
     setModalAbertoNovaLista(true);
   }
 
-  function fecharModalNovaLista() {
+  function fecharModalNovaLista(salvo = false) {
+    if (salvo) {
+      fetchListas();
+    }
+    setListaEditando(null);
     setModalAbertoNovaLista(false);
   }
+
+  useEffect(() => {
+    fetchListas();
+  }, []);
 
   function adicionarTarefa(listaId, tarefa) {
     setListas((oldListas) =>
@@ -52,15 +67,41 @@ export default function HomePage() {
         lista.id === listaId
           ? {
             ...lista,
-            tarefas: [
-              ...lista.tarefas,
-              { ...tarefa, id: Date.now().toString() },
+            tasks: [
+              ...lista.tasks,
+              { ...tarefa },
             ],
           }
           : lista
       )
     );
   }
+
+  function alterarLista(list) {
+    setListaEditando(list)
+    setModalAbertoNovaLista(true);
+  }
+
+  async function excluirLista(listId) {
+    try {
+      const res = await fetch(`/api/list?id=${listId}`, {
+        method: "DELETE"
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("Erro na resposta do servidor:", text);
+        return;
+      }
+
+      const data = await res.json();
+      console.log("Lista excluída com sucesso:", data);
+
+      fetchListas();
+    } catch (err) {
+      console.error("Erro ao excluir lista:", err);
+    }
+  };
 
   return (
     <main className="min-h-screen bg-gray-100 p-6 relative">
@@ -80,6 +121,8 @@ export default function HomePage() {
             key={lista.id}
             lista={lista}
             adicionarTarefa={adicionarTarefa}
+            editarLista={alterarLista}
+            excluirLista={excluirLista}
           />
         ))}
       </section>
@@ -87,6 +130,7 @@ export default function HomePage() {
       <ModalNovaLista
         aberto={modalAbertoNovaLista}
         fecharModal={fecharModalNovaLista}
+        listaParaEditar={listaEditando}
       />
     </main>
   );

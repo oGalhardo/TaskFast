@@ -14,12 +14,27 @@ export default async function handler(req, res) {
   const userId = session.user.id;
 
   if (req.method === "GET") {
+    const { id } = req.query;
+
     try {
-      const categories = await prisma.listCategory.findMany({
-        where: { userId },
-        orderBy: { priority: "asc" },
-      });
-      return res.status(200).json(categories);
+      if (id) {
+        const category = await prisma.listCategory.findUnique({
+          where: {
+            id,
+            userId
+          }
+        });
+        return res.status(200).json(category);
+      }
+      else {
+        const categories = await prisma.listCategory.findMany({
+          where: {
+            userId
+          },
+          orderBy: { priority: "asc" },
+        });
+        return res.status(200).json(categories);
+      }
     } catch (error) {
       console.error(error);
       return res.status(500).json({ message: "Erro ao buscar categorias" });

@@ -18,40 +18,80 @@ export default async function handler(req, res) {
     return res.status(200).json(lists);
   }
   if (req.method === "POST") {
-    const { name, categoryId, initialDate, finalDate, priority = 0 } = req.body;
+    const { name, categoryId, initialDate, finalDate, priority = 0, tasks = [] } = req.body;
 
-    const list = await prisma.list.create({
-      data: {
-        name,
-        categoryId,
-        userId,
-        initialDate: initialDate || null,
-        finalDate: finalDate || null,
-        priority,
-      },
-    });
-    return res.status(201).json(list);
+    try {
+      const list = await prisma.list.create({
+        data: {
+          name,
+          categoryId,
+          userId,
+          initialDate: initialDate || null,
+          finalDate: finalDate || null,
+          priority,
+          tasks: {
+            create: tasks.map((t, index) => ({
+              name: t.name,
+              description: t.description || "",
+              priority: typeof t.priority === "number" ? t.priority : index,
+            })),
+          },
+        },
+        include: {
+          tasks: true,
+        },
+      });
+
+      return res.status(201).json(list);
+    } catch (error) {
+      console.error("Erro ao criar lista:", error);
+      return res.status(500).json({ message: "Erro ao criar lista", error });
+    }
   }
 
   if (req.method === "PUT") {
-    const { id, ...data } = req.body;
+    const { id, tasks = [], ...data } = req.body;
 
-    const list = await prisma.list.updateMany({
+    const listaAtualizada = await prisma.list.update({
       where: { id, userId },
-      data,
+      data: {
+        ...data,
+        tasks: {
+          deleteMany: {},
+          create: tasks.map((t, index) => ({
+            name: t.name,
+            description: t.description || "",
+            priority: typeof t.priority === "number" ? t.priority : index,
+          })),
+        },
+      },
+      include: { tasks: true },
     });
 
-    return res.status(200).json(list);
+    return res.status(200).json(listaAtualizada);
   }
 
   if (req.method === "DELETE") {
-    const { id } = req.body;
+    try {
+      const { id } = req.query;
 
-    const deleted = await prisma.list.deleteMany({
-      where: { id, userId },
-    });
+      if (!userId) {
+        return res.status(401).json({ error: "Usuário não autenticado" });
+      }
 
-    return res.status(200).json({ deleted });
+      await prisma.task.deleteMany({
+        where: { listId: id },
+      });
+
+      const deleted = await prisma.list.delete({
+        where: { id, userId },
+      });
+
+      return res.status(200).json({ deleted });
+    } catch (error) {
+      console.error("Erro no DELETE da lista:", error);
+      return res.status(500).json({ error: "Erro interno ao deletar lista" });
+    }
   }
 
   return res.status(405).json({ message: "Method Not Allowed" });
