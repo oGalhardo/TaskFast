@@ -1,24 +1,24 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+// import { useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useState, useEffect } from "react";
 
 export default function LoginPage() {
-  const searchParams = useSearchParams();
-  const errorMessage = searchParams.get("error");
+  // const searchParams = useSearchParams();
+  // const errorMessage = searchParams.get("error");
 
   const [userName, setUserName] = useState("");
   const [password, setPassword] = useState("");
   const [erro, setErro] = useState("");
 
-  useEffect(() => {
-    if (errorMessage === "Usuário não encontrado" || errorMessage === "Senha incorreta") {
-      setErro(errorMessage);
-    } else if (errorMessage) {
-      setErro("Erro ao tentar login. Verifique os dados.");
-    }
-  }, [errorMessage]);
+  // useEffect(() => {
+  //   if (errorMessage === "Usuário não encontrado" || errorMessage === "Senha incorreta") {
+  //     setErro(errorMessage);
+  //   } else if (errorMessage) {
+  //     setErro("Erro ao tentar login. Verifique os dados.");
+  //   }
+  // }, [errorMessage]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
